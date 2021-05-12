@@ -1,4 +1,4 @@
-package AlieNiT;
+package model;
 
 public class Loan {
 }

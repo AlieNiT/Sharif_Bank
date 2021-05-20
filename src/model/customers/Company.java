@@ -1,20 +1,20 @@
 package model.customers;
 
+import date.TimeManager;
 import model.Utils;
 import model.bankaccounts.CurrentAccount;
 
 import java.time.LocalDate;
 public class Company extends Customer {
     String name;
-    Person manager;
+
     LocalDate establishmentDate;
     String CEONationalCode;//yyyymmdd_name(14000201_amazon)
 
-    public Company(String CEONationalCode,String name, Person manager, LocalDate establishmentDate) {
-        super(Utils.toString(establishmentDate)+"_"+name);
+    public Company(String name,String CEONationalCode) {
+        super(new StringBuilder().append(Utils.toString(TimeManager.getInstance().getDate())).append("_").append(name).toString());
+        this.establishmentDate = TimeManager.getInstance().getDate();
         this.name = name;
-        this.manager = manager;
-        this.establishmentDate = establishmentDate;
         this.CEONationalCode = CEONationalCode;
     }
 

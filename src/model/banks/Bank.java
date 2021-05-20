@@ -1,5 +1,6 @@
 package model.banks;
 
+import date.Action;
 import model.Loan;
 import date.TimeManager;
 import model.bankaccounts.BankAccount;
@@ -15,6 +16,7 @@ public class Bank {
     String name;
     String num;
     boolean isBankrupt = false;
+    Action action;
     long balance = 3000000000L;
     LocalDate establishmentDate;
     int incomePercent = 20;
@@ -34,12 +36,16 @@ public class Bank {
         this.name = name;
         this.num = num;
         establishmentDate = TimeManager.getInstance().getDate();
+        action = new Action(this);
+        setDates();
     }
     public Bank(String name, String num, long initialAmount) {
         this.name = name;
         this.num = num;
         this.balance = initialAmount;
         establishmentDate = TimeManager.getInstance().getDate();
+        action = new Action(this);
+        setDates();
     }
     public String openDepositAccount( Customer owner, String type, int initialAmount){
         if (CentralBank.getInstance().openAccountRequest(this,owner)) {
@@ -122,6 +128,8 @@ public class Bank {
     }
     protected String changeBalance(int amount){
         balance += amount;
+        if (balance<0)
+            isBankrupt = true;
         return "Your command is taken care of.";
     }
     protected boolean hasLoan(Customer customer){
@@ -169,8 +177,17 @@ public class Bank {
     public int getInterestPercent(String type) {
         if (type.equals("long"))
             return longTermInterestPercent;
-        if (type.equals("short"))
-            return shortTermInterestPercent;
+        return shortTermInterestPercent;
+    }
+
+    private void setDates(){
+        LocalDate tmp = establishmentDate.plusMonths(1);
+        ArrayList<LocalDate> actionDates = new ArrayList<>();
+        while (tmp.isBefore(establishmentDate.plusYears(10))){
+            actionDates.add(tmp);
+            tmp = tmp.plusMonths(1);
+        }
+        TimeManager.getInstance().getAction(actionDates,action);
     }
 }
 

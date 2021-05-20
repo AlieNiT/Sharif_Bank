@@ -6,25 +6,31 @@ import model.banks.Bank;
 import model.customers.Customer;
 
 public class Action {
+    boolean isValid = true;
     DepositAccount depositAccount = null;
     Loan loan = null;
     Bank bank = null;
     Customer customer = null;
-    Action(Loan loan){
+    public Action(Loan loan){
         this.loan = loan;
     }
-    Action(Bank bank){
+    public Action(Bank bank){
         this.bank = bank;
     }
-    Action(DepositAccount depositAccount){
+    public Action(DepositAccount depositAccount){
         this.depositAccount = depositAccount;
     }
-    public String takeAction(){
-        if(loan != null)
-            loan.paymentCheck();
-        if(bank != null&&!bank.isBankrupt())
-            bank.getIncome();
-        if (depositAccount != null)
-            depositAccount.chargeCurrentAccount();
+    public void takeAction() {
+        if (isValid) {
+            if (loan != null)
+                loan.paymentCheck();
+            if (bank != null && !bank.isBankrupt())
+                bank.getIncome();
+            if (depositAccount != null)
+                depositAccount.chargeCurrentAccount();
+        }
+    }
+    public void invalidate(){
+        isValid = false;
     }
 }

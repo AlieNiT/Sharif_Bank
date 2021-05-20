@@ -1,4 +1,5 @@
 package model.banks;
+import com.google.gson.Gson;
 import model.bankaccounts.BankAccount;
 import model.bankaccounts.CurrentAccount;
 import model.bankaccounts.DebitCard;
@@ -7,6 +8,9 @@ import model.customers.Customer;
 import model.Loan;
 import model.customers.Person;
 
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -31,13 +35,33 @@ public class CentralBank {
     }
     private CentralBank() {
     }
+    public static void read(String fileName){
+        Gson gson = new Gson();
+        try (FileReader fileReader = new FileReader(fileName)) {
+            centralBank = gson.fromJson(fileReader, CentralBank.class);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    public static void write(String fileName){
+        Gson gson = new Gson();
+        try (FileWriter fileWriter = new FileWriter(fileName)) {
+            gson.toJson(centralBank,fileWriter);
+            fileWriter.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
+
+    }
     public static CentralBank getInstance(){
-        if(centralBank == null)
+        if(centralBank == null) {
             centralBank = new CentralBank();
+
+        }
+
         return centralBank;
     }
-
     public String transfer(CurrentAccount sender, CurrentAccount receiver, int amount) {
         if(sender.getDebitCard().isActive()&&sender.withdrawMoney(amount).equals("The money is withdrawn successfully!")) {
             return receiver.depositMoney(amount);
@@ -79,9 +103,9 @@ public class CentralBank {
         return accountDetails;
     }
     public boolean openAccountRequest(Bank bank, Customer customer) {
-        if(customer instanceof Person&&!((Person) customer).isOlderThan(16))
-            return false;
-        //TODO Other conditions needed for making an account
+        if (customer instanceof Person) {
+            ((Person) customer).isOlderThan(16);
+        }
         return false;
     }
 
@@ -159,7 +183,7 @@ public class CentralBank {
         }
         return "This bank doesn't exist.";
     }
-    public String addBankWithBalance(String bankName,long initialAmount){
+    public String addBank(String bankName,long initialAmount){
         if(getBankFromBankName(bankName)!= null)
             return "This bank already exists.";
         for (KnownBank bank : KnownBank.values()) {
@@ -200,6 +224,10 @@ public class CentralBank {
         return bank.openCurrentAccount(customer,initialAmount);
     }
     public String openDepositAccount(String bankName, String nationalCode, String type, int initialAmount){
+        if ((type.equals("short")&&initialAmount<5000))
+            return "for short term deposit account,the initial amount should be at least 5000$";
+        if ((type.equals("long")&&initialAmount<10000))
+            return "for long term deposit account,the initial amount should be at least 10000$";
         Bank bank = getBankFromBankName(bankName);
         if(bank == null)
             return "This bank doesn't exist.";
@@ -227,7 +255,7 @@ public class CentralBank {
             return "Your card has expired.";
         return "Your card number is wrong.";
     }
-    public String changeSecondPassword(String cardNum, String password,String newPassword){
+    public String changeCardSecondPassword(String cardNum, String password,String newPassword){
         DebitCard debitCard = getDebitCardFromCardNum(cardNum);
         if(debitCard != null)
             return debitCard.changeSecondPassword(password, newPassword);
@@ -236,7 +264,7 @@ public class CentralBank {
         }
         return "Your card number is wrong.";
     }
-    public String activateSecondPassword(String cardNum, String password,String secondPassword){
+    public String setCardSecondPassword(String cardNum, String password,String secondPassword){
         DebitCard debitCard = getDebitCardFromCardNum(cardNum);
         if(debitCard == null)
             return "Your card number is wrong.";
@@ -246,7 +274,7 @@ public class CentralBank {
         return debitCard.activateSecondPassword(password, secondPassword);
 
     }
-    public String extendExpirationDate(String bankName, String cardNum, String nationalCode){
+    public String extendTheExpirationDate(String bankName, String cardNum, String nationalCode){
         Bank bank = getBankFromBankName(bankName);
         if(bank == null)
             return "This bank doesn't exist.";
@@ -281,6 +309,19 @@ public class CentralBank {
             getBankFromBankNum(cardNum.substring(0,6)).changeBalance(-amount);
         return response;
     }
+    public String withdrawMoney(String bankName, String accountNum,String nationalCode,int amount){
+        Bank bank = getBankFromBankName(bankName);
+        if(bank == null)
+            return "This bank doesn't exist.";
+        bank.changeBalance(amount);
+        BankAccount account = getBankAccount(accountNum,bank);
+        if (account == null)
+            return "This account doesn't exist.";
+        if (account instanceof DepositAccount)
+            return "You can't withdraw money with a deposit account";
+
+        return ((CurrentAccount)account).withdrawMoney(amount);
+    }
     public String getAccountBalance(String cardNum,String password){
         Bank bank = getBankFromBankNum(cardNum.substring(0,6));
         if (bank == null)
@@ -294,7 +335,7 @@ public class CentralBank {
             return "Your card isn't active.";
         return account.getBalance(bank);
     }
-    public String transferMoneyToAnotherAccount(String cardNum, String password,String receiverCardNum,int amount){
+    public String transferMoneyByCard(String cardNum, String password,String receiverCardNum,int amount){
         BankAccount receiver = getBankAccount(receiverCardNum,getBankFromBankNum(receiverCardNum.substring(0,6)));
         if (receiver == null)
             return "Receiver card number is wrong.";
@@ -304,9 +345,11 @@ public class CentralBank {
             return "Receiver card number is wrong.";
         if (receiver instanceof DepositAccount||sender instanceof DepositAccount)
             return "You can't transfer money to or from a deposit account.";
+        if (!((CurrentAccount)sender).checkPassword(password))
+            return "Your password is wrong";
         return ((CurrentAccount)sender).getDebitCard().transferMoney((CurrentAccount) receiver,amount);
     }
-    public String transferMoneyToAnotherAccount(String bankName,String accountNum,String nationalCode,String receiverAccountNum, int amount){
+    public String transferMoneyByBank(String bankName,String accountNum,String nationalCode,String receiverAccountNum, int amount){
         BankAccount sender = getBankAccount(accountNum,getBankFromBankNum(accountNum.substring(0,6)));
         if (sender == null)
             return "Receiver card number is wrong.";

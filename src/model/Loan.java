@@ -1,5 +1,6 @@
 package model;
 
+import date.Action;
 import date.TimeManager;
 import model.bankaccounts.CurrentAccount;
 import model.banks.Bank;
@@ -11,9 +12,10 @@ import java.util.ArrayList;
 public class Loan {
     Customer receiver;
     Bank bank;
+    Action action;
     int loanAmount;
-    final LocalDate startDate;
-    final LocalDate endDate;
+    LocalDate startDate;
+    LocalDate endDate;
     int returnedValue = 0;
     int interestPercentage = 120;
     int paybackValue;
@@ -30,6 +32,8 @@ public class Loan {
         this.currentAccount = currentAccount;
         returnedValues = new ArrayList<>();
         endDate = startDate.plusYears(4);
+        action = new Action(this);
+        setDates();
     }
     public Customer getReceiver() {
         return receiver;
@@ -58,16 +62,29 @@ public class Loan {
         }
         int total = loanAmount * interestPercentage;
         if((total*monthsPassed)/48>returnedValue){
-            String response = payOffTheLoan((total*monthsPassed)/48-returnedValue);
-            if (response.equals("Your payback is successfully done.")){
+            String response;
+            if(TimeManager.getInstance().getDate().isBefore(endDate))
+                response = payOffTheLoan((total*monthsPassed)/48-returnedValue);
+            else {
+                response = payOffTheLoan(total-returnedValue);
+                ArrayList<LocalDate> tmpList = new ArrayList();
+                tmpList.add(TimeManager.getInstance().getDate().plusMonths(1));
+                TimeManager.getInstance().getAction(tmpList,action);
+            }
+            if (response.equals("Your payback is successfully done."))
                 delayMonths = 0;
-                return;
-            }
-            else{
-                if (delayMonths>3){
+            else
+                if (delayMonths>3)
                     interestPercentage+=penaltyPercentage;
-                }
-            }
         }
+    }
+    private void setDates(){
+        LocalDate tmp = startDate.plusMonths(1);
+        ArrayList<LocalDate> actionDates = new ArrayList<>();
+        while (!tmp.isAfter(endDate)){
+            actionDates.add(tmp);
+            tmp = tmp.plusMonths(1);
+        }
+        TimeManager.getInstance().getAction(actionDates,action);
     }
 }

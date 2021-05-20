@@ -1,10 +1,14 @@
 package model.customers;
 
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import model.Loan;
 import model.bankaccounts.BankAccount;
 import model.bankaccounts.CurrentAccount;
 import model.bankaccounts.DepositAccount;
+import model.banks.CentralBank;
 
+import java.io.*;
 import java.util.ArrayList;
 
 public class Customer {
@@ -26,7 +30,23 @@ public class Customer {
         totalBalance = 0;
         customers.add(this);
     }
-
+    public static void read(String fileName){
+        Gson gson = new Gson();
+        try (BufferedReader br = new BufferedReader(new FileReader(fileName));) {
+            customers = gson.fromJson(br, new TypeToken<ArrayList<Customer>>(){}.getType());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    public static void write(String fileName){
+    Gson gson = new Gson();
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(fileName));) {
+            gson.toJson(customers,bw);
+            bw.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
     public String openDepositAccount(DepositAccount depositAccount) {
         accounts.add(depositAccount);
         return "Your deposit account is successfully created.\n"+depositAccount.getAccountDetails(this);
@@ -40,8 +60,6 @@ public class Customer {
         return;
     };
     public void closeCurrentAccount (CurrentAccount currentAccount) { return; }
-
-    public void loanRepayment() { }
     public String getNationalCode(){ return nationalCode;}
     public static ArrayList<Customer> getCustomers() {
         return customers;
@@ -65,4 +83,5 @@ public class Customer {
         if (currentLoan.isPaidBack())
             currentLoan = null;
     }
+
 }

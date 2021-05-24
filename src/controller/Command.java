@@ -1,4 +1,5 @@
 package controller;
+
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -38,15 +39,10 @@ public enum Command {
     SHOW_ALL_COMPANIES("Show all companies"),
     SHOW_ALL_LOANS("Show all loans"),
     SHOW_ALL_ACCOUNTS("Show all accounts"),
-//    Show accounts for <nationalCode>
     SHOW_ACCOUNTS_FOR("Show accounts for (\\d+)"),
-    //Show details of the loan for <nationalCode>
     SHOW_DETAILS_OF_LOAN("Show details of the loan for (\\d+)"),
-    //Show bank interest <bankName>
     SHOW_BANK_INTEREST("Show bank interest (\\w+)"),
-    //Show bank balance <bankName>
     SHOW_BANK_BALANCE("Show bank balance (\\w+)"),
-    //Show central bank balance
     SHOW_CENTRAL_BANK_BALANCE("Show central bank balance"),
     SHOW_DATE("Show date");
 
@@ -58,7 +54,7 @@ public enum Command {
         this.regex = regex;
     }
 
-    public static Matcher getMatcher(String input, Command command){
+    public static Matcher getMatcher(String input, Command command) {
         return command.pattern.matcher(input);
     }
 

@@ -1,20 +1,16 @@
 package date;
 
 import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 import model.banks.CentralBank;
-import model.customers.Customer;
 
 import java.io.*;
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Map;
 
 public class TimeManager {
-    private static TimeManager timeManager;
-    private HashMap<LocalDate, ArrayList<Action>> calender;
-    public static TimeManager getInstance(HashMap<LocalDate, ArrayList<Action>> calender){
+    public static TimeManager timeManager;
+    public HashMap<String, ArrayList<Action>> calender;
+    public static TimeManager getInstance(HashMap<String, ArrayList<Action>> calender){
         if(timeManager == null) {
             timeManager = new TimeManager();
             timeManager.calender = calender;
@@ -28,14 +24,14 @@ public class TimeManager {
         }
         return timeManager;
     }
-    private LocalDate date = LocalDate.now();
-    public LocalDate getDate() {
-        return this.date;
+    public MyDate date = MyDate.now();
+    public MyDate getDate() {
+        return date;
     }
 
     public static void read(String fileName){
         Gson gson = new Gson();
-        try (BufferedReader br = new BufferedReader(new FileReader(fileName));) {
+        try (FileReader br = new FileReader(fileName);) {
             timeManager = gson.fromJson(br, TimeManager.class);
         } catch (IOException e) {
             e.printStackTrace();
@@ -50,19 +46,24 @@ public class TimeManager {
             e.printStackTrace();
         }
     }
-    public void getAction(ArrayList<LocalDate> dates, Action action){
-        for (LocalDate date:dates)  {
+    public void getAction(ArrayList<MyDate> dates, Action action){
+        for (MyDate date:dates)  {
             ArrayList<Action> tmp = calender.get(date);
+            if(tmp == null)
+                tmp = new ArrayList<>();
             tmp.add(action);
-            calender.put(date,tmp);
+            calender.put(date.toString(),tmp);
         }
     }
     public String goNextDay(){
         date = date.plusDays(1);
-        ArrayList<Action> actions = calender.get(date);
+        calender.computeIfAbsent(date.toString(), k -> new ArrayList<>());
+        ArrayList<Action> actions = calender.get(date.toString());
         for (Action action : actions) {
             action.takeAction();
         }
+        calender.remove(date.toString());
+        CentralBank.getInstance().resetBankActions();
         return "1 day passed. Current date: "+ date.toString();
     }
     public String goNextMonth(){
@@ -78,19 +79,19 @@ public class TimeManager {
         return N+" days passed. Current date: "+date.toString();
     }
     public String goForNMonths(int N){
-        LocalDate destination = date.plusMonths(N);
+        MyDate destination = date.plusMonths(N);
         while (date.isBefore(destination))
             goNextDay();
         return N+" month(s) passed. Current date: "+date.toString();
     }
     public String goForNYears(int N){
-        LocalDate destination = date.plusYears(N);
+        MyDate destination = date.plusYears(N);
         while (date.isBefore(destination))
             goNextDay();
         return N+" year(s) passed. Current date: "+date.toString();
     }
     public String goToDate(int day,int month,int year){
-        LocalDate destination = LocalDate.of(year,month,day);
+        MyDate destination = MyDate.of(year,month,day);
         if (!destination.isAfter(date))
             return "Destination date should be after the current date.";
         int daysPassed = 0;

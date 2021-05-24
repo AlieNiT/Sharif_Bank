@@ -6,12 +6,11 @@ import model.Loan;
 import model.bankaccounts.BankAccount;
 import model.bankaccounts.CurrentAccount;
 import model.bankaccounts.DepositAccount;
-import model.banks.CentralBank;
 
 import java.io.*;
 import java.util.ArrayList;
 
-public class Customer {
+public abstract class Customer {
     private static ArrayList<Customer> customers = new ArrayList<>();
     protected ArrayList<BankAccount> accounts;
     boolean isAble = true;
@@ -47,19 +46,37 @@ public class Customer {
             e.printStackTrace();
         }
     }
+
+    public static String showAllPersons() {
+        StringBuilder stringBuilder = new StringBuilder();
+        for (Customer customer :
+                customers) {
+            if (customer instanceof Person)
+                stringBuilder.append(customer.getDetail());
+        }
+        return stringBuilder.toString();
+    }
+
+    public static String showAllCompanies() {
+        StringBuilder stringBuilder = new StringBuilder();
+        for (Customer customer :
+                customers) {
+            if (customer instanceof Company)
+                stringBuilder.append(customer.getDetail());
+        }
+        return stringBuilder.toString();
+    }
+
     public String openDepositAccount(DepositAccount depositAccount) {
         accounts.add(depositAccount);
-        return "Your deposit account is successfully created.\n"+depositAccount.getAccountDetails(this);
+        return depositAccount.getAccountDetails(this);
 
     };
-    public String openCurrentAccount(CurrentAccount currentAccount) {
-        return null;
-    }
+    public abstract void openCurrentAccount(CurrentAccount currentAccount);
     public void closeDepositAccount (DepositAccount depositAccount) {
         this.accounts.remove(depositAccount);
-        return;
     };
-    public void closeCurrentAccount (CurrentAccount currentAccount) { return; }
+    public abstract void closeCurrentAccount (CurrentAccount currentAccount);
     public String getNationalCode(){ return nationalCode;}
     public static ArrayList<Customer> getCustomers() {
         return customers;
@@ -83,5 +100,6 @@ public class Customer {
         if (currentLoan.isPaidBack())
             currentLoan = null;
     }
+    public abstract String getDetail();
 
 }

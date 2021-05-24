@@ -1,21 +1,21 @@
 package model.customers;
 
+import date.MyDate;
+import date.TimeManager;
 import model.bankaccounts.CurrentAccount;
 import model.bankaccounts.DebitCard;
-import model.bankaccounts.DepositAccount;
 
-import java.time.LocalDate;
 import java.util.ArrayList;
 
 public class Person extends Customer {
     String firstName;
     String lastName;
-    LocalDate birthDate;//16 years
+    MyDate birthDate;//16 years
     ArrayList<DebitCard> debitCards;
     {
         debitCards = new ArrayList<>();
     }
-    public Person(String firstName,String lastName,String nationalCode,LocalDate birthDate) {
+    public Person(String firstName,String lastName,String nationalCode,MyDate birthDate) {
         super(nationalCode);
         this.firstName = firstName;
         this.lastName = lastName;
@@ -23,19 +23,26 @@ public class Person extends Customer {
     }
 
     public boolean isOlderThan(int age){
-        return birthDate.isBefore(LocalDate.now().minusYears(16));
+        return birthDate.isBefore(TimeManager.getInstance().getDate().minusYears(16));
     }
 
 
-    public String openCurrentAccount(CurrentAccount currentAccount) {
+    public void openCurrentAccount(CurrentAccount currentAccount) {
         accounts.add(currentAccount);
         debitCards.add(currentAccount.getDebitCard());
-        return "Your account is successfully created.\n"+currentAccount.getDebitCard().getAccountDetails(this);
+        currentAccount.getDebitCard().getAccountDetails(this);
     }
     public void closeCurrentAccount (CurrentAccount currentAccount) {
         accounts.remove(currentAccount);
         debitCards.remove(currentAccount.getDebitCard());
-    };
+    }
+
+    @Override
+    public String getDetail() {
+        return "name: "+ firstName+" "+lastName+" , national code: "+nationalCode;
+    }
+
+    ;
     //TODO Are these needed?
 //    public void changeMainPassword() {
 //    };

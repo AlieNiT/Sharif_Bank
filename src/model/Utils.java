@@ -1,6 +1,4 @@
 package model;
-
-import java.time.LocalDate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -30,19 +28,5 @@ public class Utils {
                 return false;
         }
         return true;
-    }
-    public static String toString(LocalDate localDateTime){
-        Matcher matcher = Pattern.compile("(\\d+)-(\\d+)-(\\d+)").matcher(localDateTime.toString());
-        if (matcher.find())
-            return matcher.group(1)+matcher.group(2)+matcher.group(3);
-        return null;
-    }
-    public static LocalDate getDate(String date){
-        Matcher matcher = Pattern.compile("(\\d+)[-/ ]+(\\d+)[-/ ]+(\\d+)").matcher(date);
-        if (matcher.find())
-            return LocalDate.of(Integer.parseInt(matcher.group(1)),
-                                    Integer.parseInt(matcher.group(2)),
-                                    Integer.parseInt(matcher.group(3)));
-        return null;
     }
 }

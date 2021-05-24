@@ -1,31 +1,30 @@
 package model.banks;
 
 import date.Action;
+import date.MyDate;
 import model.Loan;
 import date.TimeManager;
 import model.bankaccounts.BankAccount;
 import model.bankaccounts.CurrentAccount;
 import model.bankaccounts.DepositAccount;
 import model.customers.Customer;
-
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
 
 public class Bank {
-    String name;
-    String num;
-    boolean isBankrupt = false;
-    Action action;
-    long balance = 3000000000L;
-    LocalDate establishmentDate;
-    int incomePercent = 20;
-    int shortTermInterestPercent = 10;
-    int longTermInterestPercent = 15;
-    ArrayList<BankAccount> accounts;
-    HashMap<Customer,ArrayList<BankAccount>> customersAccounts;
-    ArrayList<Loan> loans;
-    HashMap<Customer,Loan> customersLoans;
+    public String name;
+    public String num;
+    public boolean isBankrupt = false;
+    public long balance = 3000000000L;
+    public MyDate establishmentDate;
+    public MyDate lastActionSet;
+    public int incomePercent = 20;
+    public int shortTermInterestPercent = 10;
+    public int longTermInterestPercent = 15;
+    public ArrayList<BankAccount> accounts;
+    public HashMap<Customer,ArrayList<BankAccount>> customersAccounts;
+    public ArrayList<Loan> loans;
+    public HashMap<Customer,Loan> customersLoans;
     {
         accounts = new ArrayList<>();
         loans = new ArrayList<>();
@@ -36,7 +35,6 @@ public class Bank {
         this.name = name;
         this.num = num;
         establishmentDate = TimeManager.getInstance().getDate();
-        action = new Action(this);
         setDates();
     }
     public Bank(String name, String num, long initialAmount) {
@@ -44,12 +42,15 @@ public class Bank {
         this.num = num;
         this.balance = initialAmount;
         establishmentDate = TimeManager.getInstance().getDate();
-        action = new Action(this);
         setDates();
     }
+    private Action getAction(){
+        return new Action(this,isBankrupt);
+    }
     public String openDepositAccount( Customer owner, String type, int initialAmount){
-        if (CentralBank.getInstance().openAccountRequest(this,owner)) {
+        if (CentralBank.getInstance().openAccountRequest(owner)) {
             CurrentAccount currentAccount = null;
+            customersAccounts.computeIfAbsent(owner, k -> new ArrayList<>());
             for (BankAccount account : this.customersAccounts.get(owner)) {
                 if (account.getType().equals("current")){
                     currentAccount = (CurrentAccount) account;
@@ -58,19 +59,22 @@ public class Bank {
             String openCurrentAccountResponce = "";
             if (currentAccount == null) {
                 currentAccount = this.openAdditionalCurrentAccount(owner, 0);
-                openCurrentAccountResponce = "We made an additional current account for your deposit account:\n"+ currentAccount.getDebitCard().getAccountDetails(owner);
+                CentralBank.getInstance().addAdditionalAccount(owner,currentAccount);
+                openCurrentAccountResponce = "We made an additional current account for your deposit account:\n"+ currentAccount.getDebitCard().getAccountDetails(owner)+"\n";
             }
-            DepositAccount depositAccount = new DepositAccount(owner,this,initialAmount,type,currentAccount);
+            String[] details = CentralBank.getInstance().accountRequest(this);
+            DepositAccount depositAccount = new DepositAccount(owner,this,initialAmount,type,currentAccount,details[2]);
             String depositAccountCreationResponse = owner.openDepositAccount(depositAccount);
             currentAccount.addDepositAccount(depositAccount);
+            CentralBank.getInstance().addCustomerAccount(owner,depositAccount);
             this.addBankAccount(depositAccount, owner);
             changeBalance(initialAmount);
-            return openCurrentAccountResponce.concat("\nYour deposit account is created successfully:\n"+depositAccountCreationResponse);
+            return openCurrentAccountResponce.concat("Your deposit account is created successfully:\n"+depositAccountCreationResponse);
         }
         return "Your request is rejected by the central bank.";
     }
     public CurrentAccount openAdditionalCurrentAccount(Customer owner , int initialAmount){
-        if (CentralBank.getInstance().openAccountRequest(this,owner)) {
+        if (CentralBank.getInstance().openAccountRequest(owner)) {
             CurrentAccount currentAccount = new CurrentAccount(owner, this, initialAmount);
             this.addBankAccount(currentAccount, owner);
             owner.openCurrentAccount(currentAccount);
@@ -81,6 +85,8 @@ public class Bank {
     private void addBankAccount(BankAccount bankAccount,Customer owner){
         bankAccount.getBalance(this);
         this.accounts.add(bankAccount);
+        if (this.customersAccounts.get(owner) == null)
+            customersAccounts.put(owner,new ArrayList<>());
         ArrayList<BankAccount> customersAccounts = this.customersAccounts.get(owner);
         customersAccounts.add(bankAccount);
         this.customersAccounts.put(owner,customersAccounts);
@@ -111,6 +117,7 @@ public class Bank {
         CurrentAccount currentAccount = openAdditionalCurrentAccount(owner,initialAmount);
         if(currentAccount==null)
             return "Your request is rejected by the central bank.";
+        CentralBank.getInstance().addCustomerAccount(owner,currentAccount);
         changeBalance(initialAmount);
         return "Your current account is created successfully:\n"+currentAccount.getDebitCard().getAccountDetails(owner);
     }
@@ -181,13 +188,38 @@ public class Bank {
     }
 
     private void setDates(){
-        LocalDate tmp = establishmentDate.plusMonths(1);
-        ArrayList<LocalDate> actionDates = new ArrayList<>();
+        MyDate tmp = establishmentDate.plusMonths(1);
+
+        ArrayList<MyDate> actionDates = new ArrayList<>();
         while (tmp.isBefore(establishmentDate.plusYears(10))){
             actionDates.add(tmp);
+            lastActionSet = tmp;
             tmp = tmp.plusMonths(1);
         }
-        TimeManager.getInstance().getAction(actionDates,action);
+        TimeManager.getInstance().getAction(actionDates,getAction());
+    }
+    public void resetDates(){
+        if(TimeManager.getInstance().getDate().plusYears(10).isAfter(lastActionSet)){
+            MyDate tmp = lastActionSet.plusMonths(1);
+            ArrayList<MyDate> actionDates = new ArrayList<>();
+            while (tmp.isBefore(TimeManager.getInstance().getDate().plusYears(11))){
+                actionDates.add(tmp);
+                lastActionSet = tmp;
+                tmp = tmp.plusMonths(1);
+            }
+            TimeManager.getInstance().getAction(actionDates,getAction());
+        }
+    }
+    public long getBalance() {
+        return balance;
+    }
+
+    public String getInterestPercent() {
+        return "long-term: "+longTermInterestPercent+", short-term: "+shortTermInterestPercent;
+    }
+
+    public void clearLoan(Loan loan) {
+        loans.remove(loan);
     }
 }
 

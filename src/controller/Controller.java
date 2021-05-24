@@ -1,23 +1,24 @@
 package controller;
-
+import date.MyDate;
 import date.TimeManager;
 import model.banks.CentralBank;
 import model.customers.Company;
+import model.customers.Customer;
 import model.customers.Person;
-import java.time.LocalDate;
 import java.util.Scanner;
 import java.util.regex.Matcher;
-import static database.Database.*;
 import static controller.Command.commandMatcher;
+
 public class Controller {
-    Scanner inputStream = new Scanner(System.in);
+    public Scanner inputStream = new Scanner(System.in);
 
     public void run(){
         while (true){
             System.out.print("Enter your command:");
-            String response = runCommand(inputStream.nextLine().trim());
-            write("central-bank.json","calender.json","customers.json");
-            if (response.equals("Exit command"))
+            String command = inputStream.nextLine().trim();
+            String response = runCommand(command);
+//            TimeManager.write("calender.json");
+            if (response!= null &&response.equals("Exit command"))
                 return;
             else System.out.println(response);
         }
@@ -27,7 +28,7 @@ public class Controller {
         if (input.equalsIgnoreCase("exit"))
             return "Exit command";
         Matcher M;
-        try {
+//       try {
             switch (commandMatcher(input)) {
                 case ADD_BANK:
                     M = Command.getMatcher(input, Command.ADD_BANK);
@@ -44,16 +45,16 @@ public class Controller {
                 case ADD_COMPANY:
                     M = Command.getMatcher(input, Command.ADD_COMPANY);
                     if (M.find()) {
-                        new Company(M.group(1), M.group(2));
-                        return "New company added.";
+                        Company company = new Company(M.group(1), M.group(2));
+                        return "New company added.ID: "+company.getNationalCode();
                     }break;
 
                 case ADD_PERSON:
                     M = Command.getMatcher(input, Command.ADD_PERSON);
                     if (M.find()) {
-                        LocalDate date = LocalDate.of(  Integer.parseInt(M.group(4)),
+                        MyDate date = MyDate.of( Integer.parseInt(M.group(6)),
                                                         Integer.parseInt(M.group(5)),
-                                                        Integer.parseInt(M.group(6)));
+                                                        Integer.parseInt(M.group(4)));
                         new Person(M.group(1),M.group(2),M.group(3),date);
                         return "New person added.";
                     }
@@ -67,8 +68,10 @@ public class Controller {
 
                 case SET_BANK_INTEREST_PERCENT:
                     M = Command.getMatcher(input, Command.SET_BANK_INTEREST_PERCENT);
-                    if (M.find())
-                        return CentralBank.getInstance().setBankInterestPercent(M.group(1),Integer.parseInt(M.group(2)),M.group(3));
+                    if (M.find()) {
+                        System.out.println("dfff");
+                        return CentralBank.getInstance().setBankInterestPercent(M.group(1), M.group(2), Integer.parseInt(M.group(3)));
+                    }
                     break;
 
                 case INCREASE_BANK_BALANCE:
@@ -78,15 +81,17 @@ public class Controller {
                     break;
 
                 case OPEN_DEPOSIT_ACCOUNT:
-                    M = Command.getMatcher(input, Command.INCREASE_BANK_BALANCE);
-                    if (M.find())
-                        return CentralBank.getInstance().openDepositAccount(M.group(1),M.group(1),M.group(1),Integer.parseInt(M.group(1)));
+                    M = Command.getMatcher(input, Command.OPEN_DEPOSIT_ACCOUNT);
+                    if (M.find()) {
+                        return CentralBank.getInstance().openDepositAccount(M.group(1), M.group(2), M.group(3), Integer.parseInt(M.group(4)));
+
+                    }
                     break;
 
                 case OPEN_CURRENT_ACCOUNT:
                     M = Command.getMatcher(input, Command.OPEN_CURRENT_ACCOUNT);
                     if (M.find())
-                        return CentralBank.getInstance().openCurrentAccount(M.group(1),M.group(2),Integer.parseInt(M.group(3)));
+                        return CentralBank.getInstance().openCurrentAccount(M.group(1), M.group(2), Integer.parseInt(M.group(3)));
 
                 case CLOSE_ACCOUNT:
                     M = Command.getMatcher(input, Command.CLOSE_ACCOUNT);
@@ -109,7 +114,7 @@ public class Controller {
                 case CHANGE_CARD_SECOND_PASSWORD:
                     M = Command.getMatcher(input, Command.CHANGE_CARD_SECOND_PASSWORD);
                     if (M.find())
-                        return CentralBank.getInstance().changeCardSecondPassword(M.group(1),M.group(1),M.group(1));
+                        return CentralBank.getInstance().changeCardSecondPassword(M.group(1),M.group(2),M.group(3));
                     break;
 
                 case EXTEND_THE_EXPIRATION_DATE:
@@ -121,7 +126,7 @@ public class Controller {
                 case DEPOSIT_MONEY:
                     M = Command.getMatcher(input, Command.DEPOSIT_MONEY);
                     if (M.find())
-                        return CentralBank.getInstance().depositMoney(M.group(1),M.group(2),Integer.parseInt(M.group(1)));
+                        return CentralBank.getInstance().depositMoney(M.group(1),M.group(2),Integer.parseInt(M.group(3)));
                     break;
 
                 case WITHDRAW_MONEY_BY_CARD:
@@ -145,7 +150,7 @@ public class Controller {
                 case TRANSFER_MONEY_BY_BANK:
                     M = Command.getMatcher(input, Command.TRANSFER_MONEY_BY_BANK);
                     if (M.find())
-                        return CentralBank.getInstance().transferMoneyByBank(M.group(1),M.group(2),M.group(3),M.group(3),Integer.parseInt(M.group(4)));
+                        return CentralBank.getInstance().transferMoneyByBank(M.group(1),M.group(2),M.group(3),M.group(4),Integer.parseInt(M.group(5)));
                     break;
 
                 case TRANSFER_MONEY_BY_CARD:
@@ -198,10 +203,50 @@ public class Controller {
                     if (M.find())
                         return TimeManager.getInstance().goToDate(Integer.parseInt(M.group(3)),Integer.parseInt(M.group(2)),Integer.parseInt(M.group(1)));
 
+                case SHOW_DATE:
+                    return TimeManager.getInstance().getDate().toString();
+
+                case SHOW_ALL_BANKS:
+                    return CentralBank.getInstance().showAllBanks();
+
+                case SHOW_ALL_LOANS:
+                    return CentralBank.getInstance().showAllLoans();
+
+                case SHOW_ALL_PERSONS:
+                    return Customer.showAllPersons();
+
+                case SHOW_ALL_ACCOUNTS:
+                    return CentralBank.getInstance().showAllAccounts();
+
+                case SHOW_ALL_COMPANIES:
+                    return Customer.showAllCompanies();
+
+                case SHOW_ACCOUNTS_FOR:
+                    M = Command.getMatcher(input, Command.SHOW_ACCOUNTS_FOR);
+                    if (M.find())
+                        return CentralBank.getInstance().showAccountsFor(M.group(1));
+
+                case SHOW_DETAILS_OF_LOAN:
+                    M = Command.getMatcher(input, Command.SHOW_DETAILS_OF_LOAN);
+                    if (M.find())
+                        return CentralBank.getInstance().showDetailsOfLoan(M.group(1));
+
+                case SHOW_BANK_BALANCE:
+                    M = Command.getMatcher(input, Command.SHOW_BANK_BALANCE);
+                    if (M.find())
+                        return CentralBank.getInstance().showBankBalance(M.group(1));
+
+                case SHOW_BANK_INTEREST:
+                    M = Command.getMatcher(input, Command.SHOW_BANK_INTEREST);
+                    if (M.find())
+                        return CentralBank.getInstance().showBankInterest(M.group(1));
+
+                case SHOW_CENTRAL_BANK_BALANCE:
+                    return CentralBank.getInstance().showCentralBankBalance();
             }
-        }catch(Exception e){
-            return "Wrong type of input.";
-        }
+//        }catch(Exception e){
+//            System.out.println(e);
+//        }
         return "Wrong type of input.";
     }
 }

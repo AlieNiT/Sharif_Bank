@@ -7,7 +7,6 @@ import model.bankaccounts.DepositAccount;
 import model.customers.Customer;
 import model.Loan;
 import model.customers.Person;
-
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -91,22 +90,36 @@ public class CentralBank {
     public String[] accountRequest(Bank bank) {
         String[] accountDetails = new String[3];
         if (banks.contains(bank)) {
+            boolean tmp;
+            int i = 1;
+            for (i = 1;; i++) {
+                tmp =true;
+                for (BankAccount account :
+                        bankAccounts.get(bank)) {
+                    if (i == Integer.parseInt(account.getAccountNumber().substring(8,15))) {
+                        tmp = false;
+                        break;
+                    }
+                }
+                if (tmp)
+                    break;
+            }
             Random random = new Random();
-            int numOfAccounts = bankAccounts.get(bank).size() + 1;
+
+            int numOfAccounts = i;
             accountDetails[0] = CVV2Maker();
             accountDetails[1] = passMaker();
             accountDetails[2] = bank.getNum()
                     + NDigitNumber(random.nextInt(10), 2)
-                    + NDigitNumber(numOfAccounts, 6);
-            accountDetails[2] = accountDetails[2] + controlNumberMaker(accountDetails[2]);
+                    + NDigitNumber(numOfAccounts, 7);
+            accountDetails[2] = accountDetails[2] + controlNumberMaker(accountDetails[2])%10;
         }
         return accountDetails;
     }
-    public boolean openAccountRequest(Bank bank, Customer customer) {
-        if (customer instanceof Person) {
-            ((Person) customer).isOlderThan(16);
-        }
-        return false;
+    public boolean openAccountRequest(Customer customer) {
+        if (customer instanceof Person)
+            return ((Person) customer).isOlderThan(16);
+        return true;
     }
 
     private BankAccount getBankAccount(String accountNum, String nationalCodeORId){
@@ -114,7 +127,7 @@ public class CentralBank {
             if(entry.getKey().getNationalCode().equals(nationalCodeORId)){
                 for (BankAccount account :
                         entry.getValue()) {
-                    if (account.getAccountNumber().equals(accountNum))
+                    if ((account.getAccountNumber()).equals(accountNum))
                         return account;
                 }
             }
@@ -177,7 +190,9 @@ public class CentralBank {
     public String addBank(String bankName){
         for (KnownBank bank : KnownBank.values()) {
             if (bank.getName().equals(bankName)) {
-                banks.add(new Bank(bank.getName(), bank.getCode()));
+                Bank bank1 = new Bank(bank.getName(), bank.getCode());
+                banks.add(bank1);
+                bankAccounts.put(bank1,new ArrayList<>());
                 return "Bank is added successfully:\nName: "+bank.getName()+"\nCode: "+bank.getCode();
             }
         }
@@ -194,13 +209,25 @@ public class CentralBank {
         }
         return "This bank doesn't exist.";
     }
+    public void addCustomerAccount(Customer customer,BankAccount bankAccount){
+        ArrayList list1 = bankAccounts.get(bankAccount.getBank());
+        if (list1 == null)
+            list1 = new ArrayList();
+        list1.add(bankAccount);
+        bankAccounts.put(bankAccount.getBank(),list1);
+        ArrayList list = customersAccounts.get(customer);
+        if (list == null)
+            list = new ArrayList();
+        list.add(bankAccount);
+        customersAccounts.put(customer,list);
+    }
     public String setBankIncomePercent(String bankName,int incomePercent){
         Bank bank = getBankFromBankName(bankName);
         if(bank == null)
             return "This bank doesn't exist.";
         return bank.setIncomePercent(incomePercent);
     }
-    public String setBankInterestPercent(String bankName,int incomePercent,String type){
+    public String setBankInterestPercent(String bankName,String type,int incomePercent){
         Bank bank = getBankFromBankName(bankName);
         if(bank == null)
             return "This bank doesn't exist.";
@@ -245,15 +272,18 @@ public class CentralBank {
             return "Name of the bank is wrong.";
         if (account instanceof CurrentAccount&&((CurrentAccount) account).hasDepositAccount())
             return "There are deposit accounts attached to your current account.You should close them or change their current account.";
+        ArrayList bankAcc = bankAccounts.get(account.getBank());
+        bankAcc.remove(account);
+        bankAccounts.put(account.getBank(),bankAcc);
         return account.getBank().closeAccount(account,owner);
     }
     public String changeCardPassword(String cardNum, String password,String newPassword){
         DebitCard debitCard = getDebitCardFromCardNum(cardNum);
-        if(debitCard != null)
-            return debitCard.changePassword(password,newPassword);
+        if(debitCard == null)
+            return "Your card number is wrong.";
         if (!debitCard.isActive())
             return "Your card has expired.";
-        return "Your card number is wrong.";
+        return debitCard.changePassword(password,newPassword);
     }
     public String changeCardSecondPassword(String cardNum, String password,String newPassword){
         DebitCard debitCard = getDebitCardFromCardNum(cardNum);
@@ -305,8 +335,9 @@ public class CentralBank {
         if (!debitCard.isActive())
             return "Your card has expired.";
         String response = debitCard.withdrawMoney(amount,password,2000);
-        if (response.equals("The money is withdrawn successfully!"))
-            getBankFromBankNum(cardNum.substring(0,6)).changeBalance(-amount);
+        if (response.equals("The money is withdrawn successfully!")) {
+            getBankFromBankNum(cardNum.substring(0, 6)).changeBalance(-amount);
+        }
         return response;
     }
     public String withdrawMoney(String bankName, String accountNum,String nationalCode,int amount){
@@ -384,7 +415,7 @@ public class CentralBank {
         loans.add(loan);
         customersLoans.put(customer,loan);
         currentAccount.depositMoney(amount);
-        return "Your account is charged for "+amount+"$.";
+        return "Your account(card number:"+currentAccount.getAccountNumber() +")is charged for "+amount+"$.";
     }
     public String payOffTheLoan(String bankName,String nationalCode,int amount){
         Bank bank = getBankFromBankName(bankName);
@@ -403,7 +434,107 @@ public class CentralBank {
         }
         return response;
     }
-    //public String
+
+    public String showAllBanks() {
+        StringBuilder stringBuilder = new StringBuilder();
+        for (Bank bank : banks) {
+            stringBuilder.append(bank.getName()).append("\n");
+        }
+        return stringBuilder.toString();
+    }
+
+    public String showAllLoans() {
+        StringBuilder stringBuilder = new StringBuilder();
+        for (Loan loan : loans) {
+            stringBuilder.append(loan.getDetail());
+        }
+        return stringBuilder.toString();
+    }
+
+    public String showAllAccounts() {
+        StringBuilder stringBuilder = new StringBuilder();
+        for (Bank bank:banks) {
+                ArrayList<BankAccount> accounts = bankAccounts.get(bank);
+            for (BankAccount account : accounts) {
+                String s = "- number:"+account.getAccountNumber()+" type:"+account.getType()+" customer ID:"+account.getOwner();
+                stringBuilder.append(s).append("\n");
+            }
+        }
+        return stringBuilder.toString();
+    }
+
+    public String showAccountsFor(String group) {
+        StringBuilder stringBuilder = new StringBuilder();
+        for (Map.Entry<Customer,ArrayList<BankAccount>> entry:customersAccounts.entrySet()) {
+            if (entry.getKey().getNationalCode().equals(group)){
+                for (BankAccount account : entry.getValue()) {
+                    String s = "- number:"+account.getAccountNumber()+" type:"+account.getType()+" customer ID:"+account.getOwner();
+                    stringBuilder.append(s).append("\n");
+                }
+                return stringBuilder.toString();
+            }
+        }
+        return "Wrong national code";
+    }
+
+    public String showDetailsOfLoan(String group) {
+        for (Loan loan: loans){
+            if (loan.getNationalCode().equals(group)){
+                return loan.getDetail();
+            }
+        }
+        return "No loan for this national code";
+    }
+
+    public String showBankBalance(String group) {
+        Bank bank = getBankFromBankName(group);
+        if (bank==null)
+            return "No bank with this name.";
+        return String.valueOf(bank.getBalance());
+    }
+
+    public String showBankInterest(String group) {
+        Bank bank = getBankFromBankName(group);
+        if (bank==null)
+            return "No bank with this name.";
+        return bank.getInterestPercent();
+    }
+
+    public String showCentralBankBalance() {
+        long sum = 0;
+        for (Bank bank :
+                banks) {
+            sum += bank.getBalance();
+        }
+        return String.valueOf(sum);
+    }
+
+    public void clearLoan(Loan loan) {
+        loans.remove(loan);
+        for (Map.Entry<Customer,Loan> entry:
+             customersLoans.entrySet()) {
+            if (entry.getValue() == loan)
+                customersLoans.remove(entry.getKey(),entry.getValue());
+        }
+    }
+
+    public void resetBankActions() {
+        for (Bank bank :
+                banks) {
+            bank.resetDates();
+        }
+    }
+
+    public void addAdditionalAccount(Customer owner, CurrentAccount currentAccount) {
+        customersAccounts.computeIfAbsent(owner,k -> new ArrayList<>());
+        ArrayList<BankAccount> accounts = customersAccounts.get(owner);
+        accounts.add(currentAccount);
+        customersAccounts.put(owner,accounts);
+        bankAccounts.computeIfAbsent(currentAccount.getBank(), k -> new ArrayList<>());
+        accounts = bankAccounts.get(currentAccount.getBank());
+        accounts.add(currentAccount);
+        bankAccounts.put(currentAccount.getBank(),accounts);
+    }
 }
 
 

@@ -1,28 +1,28 @@
 package model.bankaccounts;
 
+import date.MyDate;
 import date.TimeManager;
 import model.Utils;
 import model.customers.Customer;
 
-import java.time.LocalDate;
-
 public class DebitCard {
-    String CVV2;
-    String password;
-    String secondPassword;
-    BankAccount account;
-    String cardNumber;
-    Customer owner;
-    LocalDate creationDate;
-    LocalDate expirationDate;
-    protected int accountBalance;
+    public String CVV2;
+    public String password;
+    public String secondPassword;
+    public BankAccount account;
+    public String cardNumber;
+    public Customer owner;
+    public MyDate creationDate;
+    public MyDate expirationDate;
+    public int accountBalance;
 
-    public DebitCard(String CVV2, String password, String cardNumber, Customer owner, int accountBalance) {
+    public DebitCard(String CVV2, String password, String cardNumber, Customer owner, int accountBalance, CurrentAccount currentAccount) {
         this.CVV2 = CVV2;
         this.password = password;
         secondPassword = null;
         this.cardNumber = cardNumber;
         this.owner = owner;
+        this.account = currentAccount;
         creationDate = TimeManager.getInstance().getDate();
         expirationDate = creationDate.plusYears(4);
         this.accountBalance = accountBalance;
@@ -40,6 +40,7 @@ public class DebitCard {
             return "For values more than "+maximumAmount+"$, you should visit the bank in person.";
         if(this.accountBalance >= amount) {
             accountBalance -= amount;
+            account.changeBalance(-amount);
             return "The money is withdrawn successfully!";
         }
         else return "You don't have enough money in your account!";
@@ -59,7 +60,7 @@ public class DebitCard {
             this.secondPassword = newSecondPassword;
             return "Your second password is successfully changed.";
         }
-        else return "Your second password is incorrect!";
+        return "Your second password is incorrect!";
     };
     public String activateSecondPassword(String password,String secondPassword) {
         if(!this.password.equals(password))
@@ -83,10 +84,10 @@ public class DebitCard {
         if(customer == this.owner){
             String[] tmp = new String[5];
             tmp[0] = "Card Number: "+cardNumber;
-            tmp[1] = "Password"+password;
+            tmp[1] = "Password: "+password;
             tmp[2] = "CVV2: "+ CVV2;
-            tmp[3] = "Creation Date" + Utils.toString(creationDate);
-            tmp[4] = "Expiration Date" + Utils.toString(expirationDate);
+            tmp[3] = "Creation Date: " + creationDate.toString();
+            tmp[4] = "Card's expiration Date: " + expirationDate.toString();
             StringBuilder stringBuilder = new StringBuilder();
             for (int i = 0; i < 5; i++)
                 stringBuilder.append(tmp[i]).append((i != 4) ? "\n" : "");
@@ -95,7 +96,7 @@ public class DebitCard {
         return "You don't own this account";
     }
     public String changePassword(String password,String newPassword){
-        if (password.equals(password)){
+        if (this.password.equals(password)){
             this.password = newPassword;
             return "Your password is successfully changed.";
         }

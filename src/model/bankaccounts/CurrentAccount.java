@@ -1,19 +1,18 @@
 package model.bankaccounts;
-
 import model.banks.Bank;
 import model.banks.CentralBank;
 import model.customers.Customer;
-
 import java.util.ArrayList;
 
 public class CurrentAccount extends BankAccount {
-    DebitCard debitCard;
-    ArrayList<DepositAccount> depositAccounts = new ArrayList<>();
+    public DebitCard debitCard;
+    public ArrayList<DepositAccount> depositAccounts = new ArrayList<>();
     public CurrentAccount(Customer owner, Bank bank, int accountBalance) {
         super(owner, bank, accountBalance);
         type = "current";
         String[] cardDetails = CentralBank.getInstance().accountRequest(this.bank);
-        DebitCard debitCard = new DebitCard(cardDetails[0],cardDetails[1],cardDetails[2],owner,accountBalance);
+        debitCard = new DebitCard(cardDetails[0],cardDetails[1],cardDetails[2],owner,accountBalance,this);
+        this.accountNumber = cardDetails[2];
     }
 
     public String depositMoney(int amount) {
@@ -47,5 +46,10 @@ public class CurrentAccount extends BankAccount {
     }
     public boolean hasDepositAccount(){
         return (!depositAccounts.isEmpty());
+    }
+
+    public void removeDepositAccount(DepositAccount depositAccount) {
+        if (depositAccounts.contains(depositAccount))
+            depositAccounts.remove(depositAccount);
     }
 }

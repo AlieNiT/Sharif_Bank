@@ -1,17 +1,16 @@
 package model.bankaccounts;
-import java.time.LocalDate;
-
+import date.MyDate;
 import date.TimeManager;
 import model.banks.Bank;
 import model.customers.Customer;
 
 public class BankAccount {
-    protected Customer owner;
-    protected Bank bank;
-    protected String accountNumber;
-    protected int accountBalance;
-    protected LocalDate creationDate;
-    protected String type;
+    public Customer owner;
+    public Bank bank;
+    public String accountNumber;
+    public int accountBalance;
+    public MyDate creationDate;
+    public String type;
     public BankAccount(Customer owner, Bank bank, int accountBalance) {
         this.owner = owner;
         this.bank = bank;
@@ -28,6 +27,10 @@ public class BankAccount {
     }
     public String getAccountNumber(){ return accountNumber;}
     public Bank getBank() { return bank;}
-    public String closeAccount() {return "Your account is successfully closed.";}
+    public String getOwner(){return owner.getNationalCode();}
+    public String closeAccount(){ return "Your account is successfully closed.";}
 
+    public void changeBalance(int i) {
+        accountBalance += i;
+    }
 }

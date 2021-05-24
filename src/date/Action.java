@@ -6,15 +6,16 @@ import model.banks.Bank;
 import model.customers.Customer;
 
 public class Action {
-    boolean isValid = true;
-    DepositAccount depositAccount = null;
-    Loan loan = null;
-    Bank bank = null;
+    public boolean isValid = true;
+    public DepositAccount depositAccount = null;
+    public Loan loan = null;
+    public Bank bank = null;
     Customer customer = null;
     public Action(Loan loan){
         this.loan = loan;
     }
-    public Action(Bank bank){
+    public Action(Bank bank, boolean isBankrupt){
+        isValid = !isBankrupt;
         this.bank = bank;
     }
     public Action(DepositAccount depositAccount){
